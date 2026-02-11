@@ -97,13 +97,6 @@
 /* Maximum frequency steps we expose to cpufreq */
 #define AMD_CPPC_MAX_SETTINGS		64
 
-/* EPP named presets */
-#define AMD_CPPC_EPP_PERFORMANCE	0
-#define AMD_CPPC_EPP_BALANCE_PERF	64
-#define AMD_CPPC_EPP_BALANCED		128
-#define AMD_CPPC_EPP_BALANCE_POWER	192
-#define AMD_CPPC_EPP_POWERSAVE		255
-
 extern uint64_t tsc_freq;
 
 static int amd_cppc_verbose = 0;
@@ -472,7 +465,7 @@ amd_cppc_attach(device_t dev)
 	/* Create sysctl nodes */
 	SYSCTL_ADD_PROC(device_get_sysctl_ctx(dev),
 	    SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,
-	    "epp", CTLTYPE_INT | CTLFLAG_RWTUN | CTLFLAG_MPSAFE,
+	    "epp", CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_MPSAFE,
 	    dev, 0, amd_cppc_sysctl_epp, "I",
 	    "Energy Performance Preference "
 	    "(0 = max performance, 100 = max efficiency)");
