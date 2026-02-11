@@ -23,7 +23,6 @@
 #ifndef _device_if_h_
 #define _device_if_h_
 
-
 #include <sys/tslog.h>
 
 /** @brief Unique descriptor for the DEVICE_PROBE() method */
@@ -43,7 +42,7 @@ typedef int device_probe_t(device_t dev);
  * it is suitable for this driver. This might include checking
  * the values of various device instance variables or reading
  * hardware registers.
- *  
+ *
  * In some cases, there may be more than one driver available
  * which can be used for a device (for instance there might
  * be a generic driver which works for a set of many types of
@@ -62,7 +61,7 @@ typedef int device_probe_t(device_t dev);
  * description string using device_set_desc() or
  * device_set_desc_copy(). This string is used to generate an
  * informative message when DEVICE_ATTACH() is called.
- * 
+ *
  * As a special case, if a driver returns zero, the driver election
  * is cut short and that driver will attach to the device
  * immediately. This should rarely be used.
@@ -104,17 +103,18 @@ typedef int device_probe_t(device_t dev);
  * @see DEVICE_ATTACH(), pci_get_vendor(), pci_get_device()
  */
 
-static __inline int DEVICE_PROBE(device_t dev)
+static __inline int
+DEVICE_PROBE(device_t dev)
 {
 	kobjop_t _m;
 	int rc;
 
-TSENTER2(device_get_name(dev));
+	TSENTER2(device_get_name(dev));
 
-	KOBJOPLOOKUP(((kobj_t)dev)->ops,device_probe);
-	rc = ((device_probe_t *) _m)(dev);
+	KOBJOPLOOKUP(((kobj_t)dev)->ops, device_probe);
+	rc = ((device_probe_t *)_m)(dev);
 
-TSEXIT2(device_get_name(dev));
+	TSEXIT2(device_get_name(dev));
 
 	return (rc);
 }
@@ -149,11 +149,12 @@ typedef void device_identify_t(driver_t *driver, device_t parent);
  * @param parent	the parent device to use when adding new children
  */
 
-static __inline void DEVICE_IDENTIFY(driver_t *driver, device_t parent)
+static __inline void
+DEVICE_IDENTIFY(driver_t *driver, device_t parent)
 {
 	kobjop_t _m;
-	KOBJOPLOOKUP(driver->ops,device_identify);
-	((device_identify_t *) _m)(driver, parent);
+	KOBJOPLOOKUP(driver->ops, device_identify);
+	((device_identify_t *)_m)(driver, parent);
 }
 
 /** @brief Unique descriptor for the DEVICE_ATTACH() method */
@@ -184,17 +185,18 @@ typedef int device_attach_t(device_t dev);
  * @see DEVICE_PROBE()
  */
 
-static __inline int DEVICE_ATTACH(device_t dev)
+static __inline int
+DEVICE_ATTACH(device_t dev)
 {
 	kobjop_t _m;
 	int rc;
 
-TSENTER2(device_get_name(dev));
+	TSENTER2(device_get_name(dev));
 
-	KOBJOPLOOKUP(((kobj_t)dev)->ops,device_attach);
-	rc = ((device_attach_t *) _m)(dev);
+	KOBJOPLOOKUP(((kobj_t)dev)->ops, device_attach);
+	rc = ((device_attach_t *)_m)(dev);
 
-TSEXIT2(device_get_name(dev));
+	TSEXIT2(device_get_name(dev));
 
 	return (rc);
 }
@@ -226,12 +228,13 @@ typedef int device_detach_t(device_t dev);
  * @see DEVICE_ATTACH()
  */
 
-static __inline int DEVICE_DETACH(device_t dev)
+static __inline int
+DEVICE_DETACH(device_t dev)
 {
 	kobjop_t _m;
 	int rc;
-	KOBJOPLOOKUP(((kobj_t)dev)->ops,device_detach);
-	rc = ((device_detach_t *) _m)(dev);
+	KOBJOPLOOKUP(((kobj_t)dev)->ops, device_detach);
+	rc = ((device_detach_t *)_m)(dev);
 	return (rc);
 }
 
@@ -254,12 +257,13 @@ typedef int device_shutdown_t(device_t dev);
  * @endcode
  */
 
-static __inline int DEVICE_SHUTDOWN(device_t dev)
+static __inline int
+DEVICE_SHUTDOWN(device_t dev)
 {
 	kobjop_t _m;
 	int rc;
-	KOBJOPLOOKUP(((kobj_t)dev)->ops,device_shutdown);
-	rc = ((device_shutdown_t *) _m)(dev);
+	KOBJOPLOOKUP(((kobj_t)dev)->ops, device_shutdown);
+	rc = ((device_shutdown_t *)_m)(dev);
 	return (rc);
 }
 
@@ -291,12 +295,13 @@ typedef int device_suspend_t(device_t dev);
  * @see DEVICE_RESUME()
  */
 
-static __inline int DEVICE_SUSPEND(device_t dev)
+static __inline int
+DEVICE_SUSPEND(device_t dev)
 {
 	kobjop_t _m;
 	int rc;
-	KOBJOPLOOKUP(((kobj_t)dev)->ops,device_suspend);
-	rc = ((device_suspend_t *) _m)(dev);
+	KOBJOPLOOKUP(((kobj_t)dev)->ops, device_suspend);
+	rc = ((device_suspend_t *)_m)(dev);
 	return (rc);
 }
 
@@ -323,12 +328,13 @@ typedef int device_resume_t(device_t dev);
  * @see DEVICE_SUSPEND()
  */
 
-static __inline int DEVICE_RESUME(device_t dev)
+static __inline int
+DEVICE_RESUME(device_t dev)
 {
 	kobjop_t _m;
 	int rc;
-	KOBJOPLOOKUP(((kobj_t)dev)->ops,device_resume);
-	rc = ((device_resume_t *) _m)(dev);
+	KOBJOPLOOKUP(((kobj_t)dev)->ops, device_resume);
+	rc = ((device_resume_t *)_m)(dev);
 	return (rc);
 }
 
@@ -359,19 +365,20 @@ typedef int device_quiesce_t(device_t dev);
  * @see DEVICE_DETACH()
  */
 
-static __inline int DEVICE_QUIESCE(device_t dev)
+static __inline int
+DEVICE_QUIESCE(device_t dev)
 {
 	kobjop_t _m;
 	int rc;
-	KOBJOPLOOKUP(((kobj_t)dev)->ops,device_quiesce);
-	rc = ((device_quiesce_t *) _m)(dev);
+	KOBJOPLOOKUP(((kobj_t)dev)->ops, device_quiesce);
+	rc = ((device_quiesce_t *)_m)(dev);
 	return (rc);
 }
 
 /** @brief Unique descriptor for the DEVICE_REGISTER() method */
 extern struct kobjop_desc device_register_desc;
 /** @brief A function implementing the DEVICE_REGISTER() method */
-typedef void * device_register_t(device_t dev);
+typedef void *device_register_t(device_t dev);
 /**
  * @brief This is called when the driver is asked to register handlers.
  *
@@ -390,12 +397,13 @@ typedef void * device_register_t(device_t dev);
  *
  */
 
-static __inline void * DEVICE_REGISTER(device_t dev)
+static __inline void *
+DEVICE_REGISTER(device_t dev)
 {
 	kobjop_t _m;
-	void * rc;
-	KOBJOPLOOKUP(((kobj_t)dev)->ops,device_register);
-	rc = ((device_register_t *) _m)(dev);
+	void *rc;
+	KOBJOPLOOKUP(((kobj_t)dev)->ops, device_register);
+	rc = ((device_register_t *)_m)(dev);
 	return (rc);
 }
 
