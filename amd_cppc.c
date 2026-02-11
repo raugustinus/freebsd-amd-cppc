@@ -30,16 +30,16 @@
  *
  * This driver enables fine-grained CPU frequency scaling on AMD Zen 3+
  * processors using the CPPC2 MSR interface, replacing the legacy P-state
- * mechanism (hwpstate/Cool'n'Quiet) which only exposes a handful of
- * discrete frequency steps.
+ * mechanism (hwpstate/Cool'n'Quiet) which only exposes a handful of discrete
+ * frequency steps.
  *
- * CPPC allows the CPU to autonomously manage its frequency within bounds
- * set by the OS, guided by an Energy Performance Preference (EPP) hint.
- * This enables much lower idle frequencies and smoother scaling than
- * legacy P-states.
+ * CPPC allows the CPU to autonomously manage its frequency within bounds set
+ * by the OS, guided by an Energy Performance Preference (EPP) hint. This
+ * enables much lower idle frequencies and smoother scaling than legacy
+ * P-states.
  *
- * Reference: AMD PPR for Family 19h, ACPI 6.5 spec section 8.4.7,
- *            Linux drivers/cpufreq/amd-pstate.c
+ * Reference: AMD PPR for Family 19h, ACPI 6.5 spec section 8.4.7, Linux
+ * drivers/cpufreq/amd-pstate.c
  */
 
 #include <sys/param.h>
@@ -99,9 +99,9 @@
 
 extern uint64_t tsc_freq;
 
-static int amd_cppc_verbose = 0;
+static int	amd_cppc_verbose = 0;
 SYSCTL_INT(_debug, OID_AUTO, amd_cppc_verbose, CTLFLAG_RWTUN,
-    &amd_cppc_verbose, 0, "Debug AMD CPPC driver");
+	   &amd_cppc_verbose, 0, "Debug AMD CPPC driver");
 
 #define CPPC_DEBUG(dev, fmt, ...)					\
 	do {								\
@@ -129,7 +129,7 @@ struct amd_cppc_softc {
 	int		base_freq_mhz;	/* nominal frequency in MHz */
 
 	/* EPP control */
-	int		epp;		/* 0-100 user-facing scale */
+	int		epp;	/* 0-100 user-facing scale */
 
 	bool		cppc_enabled;
 };
@@ -159,9 +159,8 @@ amd_cppc_unbind_cpu(void)
  * Read an MSR on the CPU associated with this softc.
  */
 static uint64_t
-amd_cppc_rdmsr(struct amd_cppc_softc *sc, uint32_t msr)
-{
-	uint64_t val;
+amd_cppc_rdmsr(struct amd_cppc_softc *sc, uint32_t msr){
+	uint64_t	val;
 
 	amd_cppc_bind_cpu(sc->cpu_id);
 	val = rdmsr(msr);
@@ -182,8 +181,8 @@ amd_cppc_wrmsr(struct amd_cppc_softc *sc, uint32_t msr, uint64_t val)
 }
 
 /*
- * Convert abstract performance level to MHz.
- * Uses the relationship: freq = base_freq * perf / nominal_perf
+ * Convert abstract performance level to MHz. Uses the relationship: freq =
+ * base_freq * perf / nominal_perf
  */
 static int
 amd_cppc_perf_to_mhz(struct amd_cppc_softc *sc, uint8_t perf)
@@ -191,41 +190,39 @@ amd_cppc_perf_to_mhz(struct amd_cppc_softc *sc, uint8_t perf)
 
 	if (sc->nominal_perf == 0)
 		return (0);
-	return ((int)((uint64_t)sc->base_freq_mhz * perf / sc->nominal_perf));
+	return ((int)((uint64_t) sc->base_freq_mhz * perf / sc->nominal_perf));
 }
 
 /*
- * Convert MHz to abstract performance level.
- * Clamps to [lowest_perf, highest_perf].
+ * Convert MHz to abstract performance level. Clamps to [lowest_perf,
+ * highest_perf].
  */
 static uint8_t
-amd_cppc_mhz_to_perf(struct amd_cppc_softc *sc, int mhz)
-{
-	int perf;
+amd_cppc_mhz_to_perf(struct amd_cppc_softc *sc, int mhz){
+	int		perf;
 
 	if (sc->base_freq_mhz == 0)
 		return (sc->nominal_perf);
-	perf = (int)((uint64_t)mhz * sc->nominal_perf / sc->base_freq_mhz);
+	perf = (int)((uint64_t) mhz * sc->nominal_perf / sc->base_freq_mhz);
 	if (perf < sc->lowest_perf)
 		perf = sc->lowest_perf;
 	if (perf > sc->highest_perf)
 		perf = sc->highest_perf;
-	return ((uint8_t)perf);
+	return ((uint8_t) perf);
 }
 
 /*
- * Convert user-facing EPP (0-100) to hardware EPP (0-255).
- * 0 = maximum performance, 100 = maximum efficiency.
+ * Convert user-facing EPP (0-100) to hardware EPP (0-255). 0 = maximum
+ * performance, 100 = maximum efficiency.
  */
 static uint8_t
-amd_cppc_epp_to_hw(int epp)
-{
+amd_cppc_epp_to_hw(int epp){
 
 	if (epp < 0)
 		epp = 0;
 	if (epp > 100)
 		epp = 100;
-	return ((uint8_t)(epp * 255 / 100));
+	return ((uint8_t) (epp * 255 / 100));
 }
 
 /*
@@ -234,10 +231,10 @@ amd_cppc_epp_to_hw(int epp)
 static void
 amd_cppc_write_req(struct amd_cppc_softc *sc)
 {
-	uint64_t val;
+	uint64_t	val;
 
 	val = AMD_CPPC_REQ_BUILD(sc->req_max_perf, sc->req_min_perf,
-	    sc->req_des_perf, sc->req_epp);
+				 sc->req_des_perf, sc->req_epp);
 	amd_cppc_wrmsr(sc, MSR_AMD_CPPC_REQ, val);
 }
 
@@ -247,7 +244,7 @@ amd_cppc_write_req(struct amd_cppc_softc *sc)
 static int
 amd_cppc_enable(struct amd_cppc_softc *sc)
 {
-	uint64_t val;
+	uint64_t	val;
 
 	val = amd_cppc_rdmsr(sc, MSR_AMD_CPPC_ENABLE);
 	if ((val & AMD_CPPC_ENABLE_BIT) == 0) {
@@ -258,7 +255,7 @@ amd_cppc_enable(struct amd_cppc_softc *sc)
 		val = amd_cppc_rdmsr(sc, MSR_AMD_CPPC_ENABLE);
 		if ((val & AMD_CPPC_ENABLE_BIT) == 0) {
 			device_printf(sc->dev,
-			    "failed to enable CPPC on CPU %d\n", sc->cpu_id);
+			   "failed to enable CPPC on CPU %d\n", sc->cpu_id);
 			return (ENXIO);
 		}
 	}
@@ -273,7 +270,7 @@ amd_cppc_enable(struct amd_cppc_softc *sc)
 static void
 amd_cppc_disable(struct amd_cppc_softc *sc)
 {
-	uint64_t val;
+	uint64_t	val;
 
 	if (!sc->cppc_enabled)
 		return;
@@ -294,7 +291,7 @@ amd_cppc_disable(struct amd_cppc_softc *sc)
 static int
 amd_cppc_read_caps(struct amd_cppc_softc *sc)
 {
-	uint64_t cap1;
+	uint64_t	cap1;
 
 	cap1 = amd_cppc_rdmsr(sc, MSR_AMD_CPPC_CAP1);
 	sc->highest_perf = AMD_CPPC_HIGHEST_PERF(cap1);
@@ -305,16 +302,16 @@ amd_cppc_read_caps(struct amd_cppc_softc *sc)
 	if (sc->highest_perf == 0 || sc->nominal_perf == 0 ||
 	    sc->lowest_perf == 0) {
 		device_printf(sc->dev, "invalid CPPC capabilities on CPU %d: "
-		    "highest=%u nominal=%u lowest_nl=%u lowest=%u\n",
-		    sc->cpu_id, sc->highest_perf, sc->nominal_perf,
-		    sc->lowest_nonlinear_perf, sc->lowest_perf);
+			   "highest=%u nominal=%u lowest_nl=%u lowest=%u\n",
+			      sc->cpu_id, sc->highest_perf, sc->nominal_perf,
+			      sc->lowest_nonlinear_perf, sc->lowest_perf);
 		return (ENXIO);
 	}
 
 	if (sc->lowest_perf > sc->nominal_perf ||
 	    sc->nominal_perf > sc->highest_perf) {
 		device_printf(sc->dev, "inconsistent CPPC capabilities on "
-		    "CPU %d\n", sc->cpu_id);
+			      "CPU %d\n", sc->cpu_id);
 		return (ENXIO);
 	}
 
@@ -322,17 +319,17 @@ amd_cppc_read_caps(struct amd_cppc_softc *sc)
 }
 
 /*
- * Sysctl handler for EPP (Energy Performance Preference).
- * User-facing range: 0 (max performance) to 100 (max efficiency).
+ * Sysctl handler for EPP (Energy Performance Preference). User-facing range:
+ * 0 (max performance) to 100 (max efficiency).
  */
 static int
 amd_cppc_sysctl_epp(SYSCTL_HANDLER_ARGS)
 {
 	struct amd_cppc_softc *sc;
-	device_t dev;
-	int epp, error;
+	device_t	dev;
+	int		epp, error;
 
-	dev = (device_t)arg1;
+	dev = (device_t) arg1;
 	sc = device_get_softc(dev);
 	epp = sc->epp;
 
@@ -350,7 +347,7 @@ amd_cppc_sysctl_epp(SYSCTL_HANDLER_ARGS)
 		amd_cppc_write_req(sc);
 
 	CPPC_DEBUG(dev, "EPP set to %d (hw: %u) on CPU %d\n",
-	    epp, sc->req_epp, sc->cpu_id);
+		   epp, sc->req_epp, sc->cpu_id);
 	return (0);
 }
 
@@ -360,7 +357,7 @@ amd_cppc_sysctl_epp(SYSCTL_HANDLER_ARGS)
 static bool
 amd_cppc_supported(void)
 {
-	u_int regs[4];
+	u_int		regs[4];
 
 	if (cpu_vendor_id != CPU_VENDOR_AMD)
 		return (false);
@@ -381,7 +378,7 @@ amd_cppc_supported(void)
  * Device methods.
  */
 static void
-amd_cppc_identify(driver_t *driver, device_t parent)
+amd_cppc_identify(driver_t * driver, device_t parent)
 {
 
 	if (!amd_cppc_supported())
@@ -392,7 +389,7 @@ amd_cppc_identify(driver_t *driver, device_t parent)
 		return;
 
 	if (BUS_ADD_CHILD(parent, 15, "amd_cppc",
-	    device_get_unit(parent)) == NULL)
+			  device_get_unit(parent)) == NULL)
 		device_printf(parent, "amd_cppc: add child failed\n");
 }
 
@@ -414,7 +411,7 @@ static int
 amd_cppc_attach(device_t dev)
 {
 	struct amd_cppc_softc *sc;
-	int error;
+	int		error;
 
 	sc = device_get_softc(dev);
 	sc->dev = dev;
@@ -433,17 +430,17 @@ amd_cppc_attach(device_t dev)
 		return (error);
 
 	device_printf(dev,
-	    "CPU %d: highest=%u(%d MHz) nominal=%u(%d MHz) "
-	    "lowest_nl=%u(%d MHz) lowest=%u(%d MHz)\n",
-	    sc->cpu_id,
-	    sc->highest_perf,
-	    amd_cppc_perf_to_mhz(sc, sc->highest_perf),
-	    sc->nominal_perf,
-	    amd_cppc_perf_to_mhz(sc, sc->nominal_perf),
-	    sc->lowest_nonlinear_perf,
-	    amd_cppc_perf_to_mhz(sc, sc->lowest_nonlinear_perf),
-	    sc->lowest_perf,
-	    amd_cppc_perf_to_mhz(sc, sc->lowest_perf));
+		      "CPU %d: highest=%u(%d MHz) nominal=%u(%d MHz) "
+		      "lowest_nl=%u(%d MHz) lowest=%u(%d MHz)\n",
+		      sc->cpu_id,
+		      sc->highest_perf,
+		      amd_cppc_perf_to_mhz(sc, sc->highest_perf),
+		      sc->nominal_perf,
+		      amd_cppc_perf_to_mhz(sc, sc->nominal_perf),
+		      sc->lowest_nonlinear_perf,
+		      amd_cppc_perf_to_mhz(sc, sc->lowest_nonlinear_perf),
+		      sc->lowest_perf,
+		      amd_cppc_perf_to_mhz(sc, sc->lowest_perf));
 
 	/* Set default EPP to balanced */
 	sc->epp = 50;
@@ -464,26 +461,26 @@ amd_cppc_attach(device_t dev)
 
 	/* Create sysctl nodes */
 	SYSCTL_ADD_PROC(device_get_sysctl_ctx(dev),
-	    SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,
-	    "epp", CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_MPSAFE,
-	    dev, 0, amd_cppc_sysctl_epp, "I",
-	    "Energy Performance Preference "
-	    "(0 = max performance, 100 = max efficiency)");
+		     SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,
+			"epp", CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_MPSAFE,
+			dev, 0, amd_cppc_sysctl_epp, "I",
+			"Energy Performance Preference "
+			"(0 = max performance, 100 = max efficiency)");
 
 	SYSCTL_ADD_U8(device_get_sysctl_ctx(dev),
-	    SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,
-	    "highest_perf", CTLFLAG_RD, &sc->highest_perf, 0,
-	    "Highest performance capability");
+		      SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,
+		      "highest_perf", CTLFLAG_RD, &sc->highest_perf, 0,
+		      "Highest performance capability");
 
 	SYSCTL_ADD_U8(device_get_sysctl_ctx(dev),
-	    SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,
-	    "nominal_perf", CTLFLAG_RD, &sc->nominal_perf, 0,
-	    "Nominal (sustained) performance capability");
+		      SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,
+		      "nominal_perf", CTLFLAG_RD, &sc->nominal_perf, 0,
+		      "Nominal (sustained) performance capability");
 
 	SYSCTL_ADD_U8(device_get_sysctl_ctx(dev),
-	    SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,
-	    "lowest_perf", CTLFLAG_RD, &sc->lowest_perf, 0,
-	    "Lowest performance capability");
+		      SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,
+		      "lowest_perf", CTLFLAG_RD, &sc->lowest_perf, 0,
+		      "Lowest performance capability");
 
 	/* Register with cpufreq framework */
 	return (cpufreq_register(dev));
@@ -513,7 +510,7 @@ static int
 amd_cppc_resume(device_t dev)
 {
 	struct amd_cppc_softc *sc;
-	int error;
+	int		error;
 
 	sc = device_get_softc(dev);
 
@@ -537,15 +534,15 @@ amd_cppc_resume(device_t dev)
 /*
  * Return available frequency settings.
  *
- * Generate evenly-spaced steps from highest to lowest performance.
- * powerd picks from these; when it calls set(), we translate back to
- * a CPPC performance level.
+ * Generate evenly-spaced steps from highest to lowest performance. powerd
+ * picks from these; when it calls set(), we translate back to a CPPC
+ * performance level.
  */
 static int
 amd_cppc_settings(device_t dev, struct cf_setting *sets, int *count)
 {
 	struct amd_cppc_softc *sc;
-	int perf_range, step, n, perf;
+	int		perf_range, step, n, perf;
 
 	sc = device_get_softc(dev);
 	if (!sc->cppc_enabled)
@@ -568,11 +565,11 @@ amd_cppc_settings(device_t dev, struct cf_setting *sets, int *count)
 	/* Generate entries from highest down to just above lowest */
 	n = 0;
 	for (perf = sc->highest_perf; perf > sc->lowest_perf;
-	    perf -= step) {
+	     perf -= step) {
 		if (n >= *count || n >= AMD_CPPC_MAX_SETTINGS)
 			break;
 		memset(&sets[n], 0, sizeof(sets[n]));
-		sets[n].freq = amd_cppc_perf_to_mhz(sc, (uint8_t)perf);
+		sets[n].freq = amd_cppc_perf_to_mhz(sc, (uint8_t) perf);
 		sets[n].volts = CPUFREQ_VAL_UNKNOWN;
 		sets[n].power = CPUFREQ_VAL_UNKNOWN;
 		sets[n].lat = 1;	/* ~1 us transition latency */
@@ -598,15 +595,15 @@ amd_cppc_settings(device_t dev, struct cf_setting *sets, int *count)
 /*
  * Set the target frequency.
  *
- * We interpret the target frequency as the maximum performance cap.
- * The CPU autonomously manages its actual frequency between lowest_perf
- * and the cap, guided by EPP.
+ * We interpret the target frequency as the maximum performance cap. The CPU
+ * autonomously manages its actual frequency between lowest_perf and the cap,
+ * guided by EPP.
  */
 static int
 amd_cppc_set(device_t dev, const struct cf_setting *cf)
 {
 	struct amd_cppc_softc *sc;
-	uint8_t target_perf;
+	uint8_t		target_perf;
 
 	sc = device_get_softc(dev);
 	if (!sc->cppc_enabled)
@@ -621,15 +618,15 @@ amd_cppc_set(device_t dev, const struct cf_setting *cf)
 	amd_cppc_write_req(sc);
 
 	CPPC_DEBUG(dev, "CPU %d: set max_perf=%u (%d MHz), epp=%u\n",
-	    sc->cpu_id, target_perf, cf->freq, sc->req_epp);
+		   sc->cpu_id, target_perf, cf->freq, sc->req_epp);
 	return (0);
 }
 
 /*
  * Get the current frequency setting.
  *
- * Returns the last-requested max performance as a frequency.
- * For actual measured frequency, users can check aperf/mperf.
+ * Returns the last-requested max performance as a frequency. For actual
+ * measured frequency, users can check aperf/mperf.
  */
 static int
 amd_cppc_get(device_t dev, struct cf_setting *cf)
@@ -661,26 +658,26 @@ amd_cppc_type(device_t dev, int *type)
 
 static device_method_t amd_cppc_methods[] = {
 	/* Device interface */
-	DEVMETHOD(device_identify,	amd_cppc_identify),
-	DEVMETHOD(device_probe,		amd_cppc_probe),
-	DEVMETHOD(device_attach,	amd_cppc_attach),
-	DEVMETHOD(device_detach,	amd_cppc_detach),
-	DEVMETHOD(device_suspend,	amd_cppc_suspend),
-	DEVMETHOD(device_resume,	amd_cppc_resume),
+	DEVMETHOD(device_identify, amd_cppc_identify),
+		DEVMETHOD(device_probe, amd_cppc_probe),
+		DEVMETHOD(device_attach, amd_cppc_attach),
+		DEVMETHOD(device_detach, amd_cppc_detach),
+		DEVMETHOD(device_suspend, amd_cppc_suspend),
+		DEVMETHOD(device_resume, amd_cppc_resume),
 
 	/* cpufreq interface */
-	DEVMETHOD(cpufreq_drv_set,	amd_cppc_set),
-	DEVMETHOD(cpufreq_drv_get,	amd_cppc_get),
-	DEVMETHOD(cpufreq_drv_type,	amd_cppc_type),
-	DEVMETHOD(cpufreq_drv_settings,	amd_cppc_settings),
+		DEVMETHOD(cpufreq_drv_set, amd_cppc_set),
+		DEVMETHOD(cpufreq_drv_get, amd_cppc_get),
+		DEVMETHOD(cpufreq_drv_type, amd_cppc_type),
+		DEVMETHOD(cpufreq_drv_settings, amd_cppc_settings),
 
-	DEVMETHOD_END
+		DEVMETHOD_END
 };
 
 static driver_t amd_cppc_driver = {
 	"amd_cppc",
-	amd_cppc_methods,
-	sizeof(struct amd_cppc_softc),
+		amd_cppc_methods,
+		sizeof(struct amd_cppc_softc),
 };
 
 DRIVER_MODULE(amd_cppc, cpu, amd_cppc_driver, NULL, NULL);
