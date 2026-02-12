@@ -9,10 +9,10 @@ export_syms
 *_if.h
 opt_*.h
 
-# Build symlinks
-i386/
-machine/
-x86/
+# Build symlinks to kernel source
+i386
+machine
+x86
 
 # clang-format config
 .clang-format
