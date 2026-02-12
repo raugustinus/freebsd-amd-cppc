@@ -1,2 +1,18 @@
+# Build artifacts
+*.o
+*.ko
 *.BAK
+.depend.*
+export_syms
+
+# Generated headers (created by bsd.kmod.mk)
+*_if.h
+opt_*.h
+
+# Build symlinks
+i386/
+machine/
+x86/
+
+# clang-format config
 .clang-format
